@@ -17,10 +17,6 @@ void readImageOpenCV() {
 }
 
 
-void readImage() {
-	ifstream file("flower.jpg", ios::binary);
-	vector<unsigned char> buffer(istreambuf_iterator<char>(file), {});
-}
 int main() {
 
 	// Define file stream object, and open the file
