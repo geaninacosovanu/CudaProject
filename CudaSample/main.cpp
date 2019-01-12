@@ -14,38 +14,26 @@ using namespace cv;
 
 int main(int argc, char **argv) {
 
-
-	cv::Mat input = cv::imread("castle.jpg", IMREAD_UNCHANGED);
+	cv::Mat input = cv::imread("flower.jpg", IMREAD_UNCHANGED);
 
 
 	///convert from char(0-255) BGR to float (0.0-0.1) RGBA
-	Mat inputRGBA;
-	cvtColor(input, inputRGBA, 2, 4);
-	inputRGBA.convertTo(inputRGBA, CV_32FC4);
-	inputRGBA /= 255;
+	Mat inputRGB;
+	cvtColor(input, inputRGB, 4, 3); // convert BGR to RGB
+	inputRGB.convertTo(inputRGB, CV_32F); // CV_32F -> valoare pixeli 0-1
+	inputRGB /= 255;
 
-	//Create output image
-	Mat output(input.size(), inputRGBA.type());
-	//Mat output(input.size(), input.type());
+	Mat output(input.size(), inputRGB.type());
 
-	const float euclidean_delta = 3.0f;
-	const int filter_radius = 3;
-	/*
-		bilateralFilterCuda((float4*)input.ptr<float4>(),
-			(float4*)output.ptr<float4>(),
-			euclidean_delta,
-			input.cols, input.rows,
-			filter_radius);*/
+	float euclideanDelta = 3.0f;
+	int filterRadius = 3;
 
-	bilateralFilterCuda((float4*)inputRGBA.ptr<float4>(),
-		(float4*)output.ptr<float4>(),
-		euclidean_delta,
-		inputRGBA.cols, inputRGBA.rows,
-		filter_radius);
+
+	bilateralFilterCuda((float3*)inputRGB.ptr<float3>(), (float3*)output.ptr<float3>(), euclideanDelta, inputRGB.cols, inputRGB.rows, filterRadius);
 	// convert back to char (0-255) BGR
 	output *= 255;
-	//output.convertTo(output, CV_8UC4);
-	cvtColor(output, output, 2, 3);
+	output.convertTo(output, CV_8U); //  CV_8U -> valoare pixeli 0-255
+	cvtColor(output, output, cv::COLOR_BGR2RGB, 3);
 	imwrite("output.jpg", output);
 	return 0;
 }

@@ -25,25 +25,25 @@ void computeGaussianKernelCuda(float delta, int radius)
 }
 
 // Functie ce calculeaza distanta euclidiana dintre 2 puncte cu 4 coordonate
-__device__  float euclideanLength(float4 a, float4 b, float d)
+__device__  float euclideanLength(float3 a, float3 b, float d)
 {
-	float mod = (b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y) + (b.z - a.z) * (b.z - a.z) + (b.w - a.w) * (b.w - a.w);
+	float mod = (b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y) + (b.z - a.z) * (b.z - a.z) ;
 	return expf(-mod / (2.0f * d * d));
 }
 
 
-__device__  float4 multiplyCuda(float a, float4 b)
+__device__  float3 multiplyCuda(float a, float3 b)
 {
-	return { a * b.x, a * b.y, a * b.z, a * b.w };
+	return { a * b.x, a * b.y, a * b.z};
 }
 
 
-__device__  float4 addCuda(float4 a, float4 b)
+__device__  float3 addCuda(float3 a, float3 b)
 {
-	return { a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w };
+	return { a.x + b.x, a.y + b.y, a.z + b.z};
 }
 
-__global__ void bilateralFilterKernel(float4*  deviceInput, float4*  deviceOutput, float euclideanDelta, int width, int height, int filterRadius)
+__global__ void bilateralFilterKernel(float3*  deviceInput, float3*  deviceOutput, float euclideanDelta, int width, int height, int filterRadius)
 {
 	int idx = blockIdx.x * blockDim.x + threadIdx.x; // dimensiunea x a id-ului global 
 	int idy = blockIdx.y * blockDim.y + threadIdx.y; // dimensiunea y a id-ului global 
@@ -51,9 +51,9 @@ __global__ void bilateralFilterKernel(float4*  deviceInput, float4*  deviceOutpu
 	if ((idx < width) && (idy < height))
 	{
 		float sum = 0.0f;
-		float4 t = { 0.f, 0.f, 0.f, 0.f };
+		float3 t = { 0.f, 0.f, 0.f };
 		int position = idy * width + idx;
-		float4 center = deviceInput[position];
+		float3 center = deviceInput[position];
 		int r = filterRadius;
 
 		float domainDistance = 0.0f, colorDistance = 0.0f, factor = 0.0f;
@@ -76,7 +76,7 @@ __global__ void bilateralFilterKernel(float4*  deviceInput, float4*  deviceOutpu
 				else if (currentX >= width)
 					currentX = width - 1;
 
-				float4 currentPixel = deviceInput[currentY * width + currentX];
+				float3 currentPixel = deviceInput[currentY * width + currentX];
 				domainDistance = c_gaussian[r + i] * c_gaussian[r + j];
 				colorDistance = euclideanLength(currentPixel, center, euclideanDelta);
 				factor = domainDistance * colorDistance;
@@ -91,24 +91,24 @@ __global__ void bilateralFilterKernel(float4*  deviceInput, float4*  deviceOutpu
 
 
 
-void bilateralFilterCuda(float4*  hostInput, float4*  hostOutput, float euclideanDelta, int width, int height, int filterRadius)
+void bilateralFilterCuda(float3*  hostInput, float3*  hostOutput, float euclideanDelta, int width, int height, int filterRadius)
 {
 	// compute the gaussian kernel for the current radius and delta
 	computeGaussianKernelCuda(euclideanDelta, filterRadius);
 
-	int inputBytes = width * height * sizeof(float4);
+	int inputBytes = width * height * sizeof(float3);
 	int outputBytes = inputBytes;
 
-	float4* deviceInput, *deviceOutput;
-	cudaMalloc<float4>(&deviceInput, inputBytes);
-	cudaMalloc<float4>(&deviceOutput, outputBytes);
+	float3* deviceInput, *deviceOutput;
+	cudaMalloc<float3>(&deviceInput, inputBytes);
+	cudaMalloc<float3>(&deviceOutput, outputBytes);
 
 
 	cudaMemcpy(deviceInput, hostInput, inputBytes, cudaMemcpyHostToDevice); // copiem datele in memoria GPU
 
 
 	dim3 block(8, 8); //definim un bloc de 8x8 threaduri
-	dim3 grid((width + block.x - 1) / block.x, (height + block.y - 1) / block.y);// definim gridul astfel incat sa acopere toata imaginea
+	dim3 grid((width + block.x - 1) , (height + block.y - 1) );// definim gridul astfel incat sa acopere toata imaginea
 
 
 	bilateralFilterKernel << <grid, block >> > (deviceInput, deviceOutput, euclideanDelta, width, height, filterRadius);
