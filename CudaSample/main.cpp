@@ -30,7 +30,6 @@ int main(int argc, char **argv) {
 
 	cv::Mat input = cv::imread("knowledge_graph_logo.jpeg", IMREAD_UNCHANGED);
 
-	cv::imshow("IMg1", input);
 
 	///convert from char(0-255) BGR to float (0.0-0.1) RGBA
 	Mat inputRGBA;
@@ -60,8 +59,6 @@ int main(int argc, char **argv) {
 	output *= 255;
 	//output.convertTo(output, CV_8UC4);
 	cvtColor(output, output, 2, 3);
-	cv::imshow("Img2", output);
-	cv::waitKey();
 	imwrite("output.jpg", output);
 	return 0;
 }
